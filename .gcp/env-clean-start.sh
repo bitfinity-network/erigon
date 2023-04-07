@@ -1,4 +1,6 @@
 #!/usr/bin/env sh
+# Recreate environment - full reset and start
+
 SCRIPT_DIR=$(realpath $(dirname "$0"))
 . $SCRIPT_DIR/config.env
 export TERM=xterm-mono

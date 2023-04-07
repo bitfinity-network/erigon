@@ -1,4 +1,6 @@
 #!/usr/bin/env sh
+# Update scripts directory from GCS
+
 SCRIPT_DIR=$(realpath $(dirname "$0"))
 . $SCRIPT_DIR/config.env
 
