@@ -7,5 +7,4 @@ set -e
 mkdir -p ~/db
 rm -rf ~/db/*
 
-docker-compose -f ~/scripts/docker-compose.yaml logs -f
-
+docker compose -f ~/scripts/docker-compose.yaml logs -f

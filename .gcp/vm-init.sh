@@ -7,14 +7,24 @@ ERIGON_UID=942
 BUCKET_PATH=is-env-confg/erigon
 
 # Installing packages
+# require ca-certificates curl gnupg
 gcsFuseRepo=gcsfuse-`lsb_release -c -s`;
 echo "deb http://packages.cloud.google.com/apt $gcsFuseRepo main" | tee /etc/apt/sources.list.d/gcsfuse.list;
-curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -;
+echo \
+  "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+  "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+  tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+mkdir -m 0755 -p /etc/apt/keyrings
+curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | | gpg --dearmor -o /etc/apt/keyrings/google-cloud.gpg
+chmod a+r /etc/apt/keyrings/google-cloud.gpg
+curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+chmod a+r /etc/apt/keyrings/docker.gpg
+
 apt-get update
 apt-get -y upgrade
 apt-get -y install bash-completion vim tmux vim mc docker.io docker-compose gcsfuse
 apt-get clean
-
 
 # Docker 
 systemctl enable docker
