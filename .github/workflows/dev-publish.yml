@@ -6,11 +6,9 @@ on:
   push:
     branches:
       - "evmc_importer"
-      - "ci/vmdeploy"
 
   pull_request:
     branches: [evmc_importer]
-
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -57,9 +55,8 @@ jobs:
       - name: Building base Rust/DFX image
         uses: docker/build-push-action@v4
         with:
-          # push-image: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/develop') ||  github.ref_type == 'tag' }}
-          # push: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/main') ||  github.ref_type == 'tag' }}
-          push: true
+          # push-image: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/evmc_importer') ||  github.ref_type == 'tag' }}
+          push: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/evmc_importer') }}
           context: .
           file: ./Dockerfile
           build-args: |
@@ -67,17 +64,4 @@ jobs:
             GID=942
           tags: |
             us-central1-docker.pkg.dev/dfx-server/dfx-containers/erigon:latest
-    
-      - id: 'ssh-compute'
-        uses: 'google-github-actions/ssh-compute@v0'
-        with:
-          instance_name: ${{ env.VM_INSTANCE_NAME }}
-          zone: ${{ env.VM_ZONE }}
-          user: 'erigon'
-          ssh_private_key: '${{ secrets.GCP_SSH_ERIGON_KEY }}'
-          command: 'sh -c "/erigon/scripts/env-update.sh"'
-          
-      - name: "SSH compute output"
-        run: |-
-          echo '${{ steps.ssh-compute.outputs.stdout }}'
-          echo '${{ steps.ssh-compute.outputs.stderr }}'
+
