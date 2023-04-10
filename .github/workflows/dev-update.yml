@@ -1,13 +1,13 @@
-name: "is-vm-refresh"
+name: "Dev env update"
 
 on:
   workflow_dispatch: {}
 
   workflow_run:
-    workflows: [is-build-publish]
+    workflows: [Dev-Build-Publish]
     types: [completed]
     branches:
-      - "develop"
+      - "evmc_importer"
       - "ci/vmdeploy"
 
 env:

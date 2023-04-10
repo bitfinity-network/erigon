@@ -1,15 +1,15 @@
-name: "is-build-publish"
+name: "Dev-Build-Publish"
 
 on:
   workflow_dispatch: {}
 
   push:
     branches:
-      - "develop"
+      - "evmc_importer"
       - "ci/vmdeploy"
 
   pull_request:
-    branches: [develop]
+    branches: [evmc_importer]
 
 
 concurrency:
