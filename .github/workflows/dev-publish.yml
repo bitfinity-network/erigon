@@ -47,6 +47,7 @@ jobs:
 
       - name: Updating scripts
         uses: 'google-github-actions/upload-cloud-storage@v1'
+        if: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/evmc_importer') }}
         with:
           path: '.gcp'
           parent: false

@@ -34,7 +34,7 @@ jobs:
           zone: ${{ env.VM_ZONE }}
           user: 'erigon'
           ssh_private_key: '${{ secrets.GCP_SSH_ERIGON_KEY }}'
-          command: 'sh -c "~/scripts/env-update.sh"'
+          command: 'sh -c "~/scripts/update.sh" && sh -c "~/scripts/env-update.sh"'
 
       - name: "SSH run output"
         run: |-
