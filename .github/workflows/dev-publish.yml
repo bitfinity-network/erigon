@@ -55,7 +55,6 @@ jobs:
       - name: Building base Rust/DFX image
         uses: docker/build-push-action@v4
         with:
-          # push-image: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/evmc_importer') ||  github.ref_type == 'tag' }}
           push: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/evmc_importer') }}
           context: .
           file: ./Dockerfile

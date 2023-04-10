@@ -13,8 +13,8 @@ services:
   # Writes data to db-volume
   blockimporter:
     <<: *default-erigon-service
-    # network_mode: host
-    command: ["blockimporter", "--db", "/chain-db", "--evm", "https://4fe7g-7iaaa-aaaak-aegcq-cai.raw.ic0.app"]
+    entrypoint: /bin/sh
+    command: ["-c", "blockimporter --db=/chain-db --evm=https://4fe7g-7iaaa-aaaak-aegcq-cai.raw.ic0.app"]
     restart: unless-stopped
 
   # Reads data from db-volume
@@ -22,7 +22,8 @@ services:
   rpcdaemon:
     <<: *default-erigon-service
     pid: service:blockimporter
-    command: ["rpcdaemon", "--http.addr", "0.0.0.0", "--http.port", "8555", "--datadir", "/chain-db", "--http.corsdomain", "*", "--http.api=eth,erigon,ots"]
+    entrypoint: /bin/sh
+    command: ["-c", "rpcdaemon --http.addr=0.0.0.0 --http.port=8555 --datadir=/chain-db --http.corsdomain=* --http.api=eth,erigon,ots"]
     ports: ["8555:8555"]
     restart: unless-stopped
 

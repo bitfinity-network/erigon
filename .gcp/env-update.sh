@@ -5,8 +5,7 @@ export TERM=xterm-mono
 
 set -e
 
-docker compose -f ~/scripts/docker-compose.yaml stop
-docker compose -f ~/scripts/docker-compose.yaml down
+docker compose -f ~/scripts/docker-compose.yaml rm -fs
 echo "Compose images pull started"
 docker compose -f ~/scripts/docker-compose.yaml pull --quiet
 echo "Compose images successfuly pulled"
