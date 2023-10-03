@@ -69,31 +69,6 @@ func makeBlockRequest(fromBlock uint64) map[string]interface{} {
 	return makeJsonRpcRequest("ic_getBlocksRLP", params)
 }
 
-func makeRpcRequest(client *http.Client, url string, args map[string]interface{}) (interface{}, error) {
-	requestBody, err := json.Marshal(args)
-	if err != nil {
-		return "", err
-	}
-
-	resp, err := client.Post(url, "application/json", bytes.NewBuffer(requestBody))
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	decoder := json.NewDecoder(resp.Body)
-	var response jsonResponse
-	if err = decoder.Decode(&response); err != nil {
-		return "", err
-	}
-
-	if response.Error != nil {
-		return "", fmt.Errorf("%v", response.Error)
-	}
-
-	return response.Result, nil
-}
-
 func makeInitialBalancesRequest() map[string]interface{} {
 	return makeJsonRpcRequest("ic_getGenesisBalances", []string{})
 }
@@ -117,6 +92,31 @@ func readBlocksFromRlp(byteStream io.Reader) ([]types.Block, error) {
 	}
 
 	return result, nil
+}
+
+func makeRpcRequest(client *http.Client, url string, args map[string]interface{}) (interface{}, error) {
+	requestBody, err := json.Marshal(args)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := client.Post(url, "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	decoder := json.NewDecoder(resp.Body)
+	var response jsonResponse
+	if err = decoder.Decode(&response); err != nil {
+		return "", err
+	}
+
+	if response.Error != nil {
+		return "", fmt.Errorf("%v", response.Error)
+	}
+
+	return response.Result, nil
 }
 
 func parseBalanceEntry(entry interface{}) (BalanceEntry, error) {
