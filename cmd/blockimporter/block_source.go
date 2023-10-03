@@ -61,6 +61,14 @@ func makeJsonRpcRequest(name string, params []string) map[string]interface{} {
 	}
 }
 
+func makeBlockRequest(fromBlock uint64) map[string]interface{} {
+	params := []string{
+		fmt.Sprintf("0x%02x", fromBlock), // from block
+		"0x05",                           // max blocks per request
+	}
+	return makeJsonRpcRequest("ic_getBlocksRLP", params)
+}
+
 func makeRpcRequest(client *http.Client, url string, args map[string]interface{}) (interface{}, error) {
 	requestBody, err := json.Marshal(args)
 	if err != nil {
@@ -84,14 +92,6 @@ func makeRpcRequest(client *http.Client, url string, args map[string]interface{}
 	}
 
 	return response.Result, nil
-}
-
-func makeBlockRequest(fromBlock uint64) map[string]interface{} {
-	params := []string{
-		fmt.Sprintf("0x%02x", fromBlock), // from block
-		"0x05",                           // max blocks per request
-	}
-	return makeJsonRpcRequest("ic_getBlocksRLP", params)
 }
 
 func makeInitialBalancesRequest() map[string]interface{} {
