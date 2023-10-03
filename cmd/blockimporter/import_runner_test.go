@@ -50,10 +50,10 @@ func (blockSource FileBasedBlockSource) GetInitialBalances() ([]BalanceEntry, er
 	return []BalanceEntry{BalanceEntry{Address: common.HexToAddress(ownerAccount), Balance: *maxBalance()}}, nil
 }
 
-const chainID int64 = 355113
+const testChainID int64 = 355113
 
 func (blockSource FileBasedBlockSource) GetChainID() (int64, error) {
-	return chainID, nil
+	return testChainID, nil
 }
 
 // Returns the max ETH balance to init a owner account

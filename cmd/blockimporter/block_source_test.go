@@ -45,7 +45,7 @@ func (blockSource *MockBlockSource) GetInitialBalances() ([]BalanceEntry, error)
 }
 
 func (blockSource *MockBlockSource) GetChainID() (int64, error) {
-	return chainID, nil
+	return testChainID, nil
 }
 
 func TestRetry(t *testing.T) {
