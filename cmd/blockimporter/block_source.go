@@ -94,13 +94,13 @@ func readBlocksFromRlp(byteStream io.Reader) ([]types.Block, error) {
 	return result, nil
 }
 
-func makeRpcRequest(client *http.Client, url string, args map[string]interface{}) (interface{}, error) {
+func (blockSource *HttpBlockSource) makeRpcRequest(args map[string]interface{}) (interface{}, error) {
 	requestBody, err := json.Marshal(args)
 	if err != nil {
 		return "", err
 	}
 
-	resp, err := client.Post(url, "application/json", bytes.NewBuffer(requestBody))
+	resp, err := blockSource.client.Post(blockSource.url, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		return "", err
 	}
@@ -150,10 +150,6 @@ func parseBalanceEntry(entry interface{}) (BalanceEntry, error) {
 	}, nil
 }
 
-func (blockSource *HttpBlockSource) makeRpcRequest(args map[string]interface{}) (interface{}, error) {
-	return makeRpcRequest(&blockSource.client, blockSource.url, args)
-}
-
 func (blockSource *HttpBlockSource) PollBlocks(fromBlock uint64) ([]types.Block, error) {
 	args := makeBlockRequest(fromBlock)
 
@@ -192,7 +188,7 @@ func (blockSource *HttpBlockSource) GetInitialBalances() ([]BalanceEntry, error)
 
 func (blockSource *HttpBlockSource) GetChainID() (int64, error) {
 	requestData := makeJsonRpcRequest("eth_chainId", []string{})
-	chainIDResponse, err := makeRpcRequest(&blockSource.client, blockSource.url, requestData)
+	chainIDResponse, err := blockSource.makeRpcRequest(requestData)
 	if err != nil {
 		return 0, err
 	}
