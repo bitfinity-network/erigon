@@ -144,6 +144,10 @@ func (state *State) ProcessBlock(block types.Block) error {
 		return fmt.Errorf("some of the transactions were rejected")
 	}
 
+	if execRs.StateRoot != block.Root() {
+		return fmt.Errorf("State root do not match: local %s != remote %s", execRs.StateRoot.String(), block.Root().String())
+	}
+
 	if err := stateWriter.WriteHistory(); err != nil {
 		return fmt.Errorf("failed to write history: %v", err)
 	}
