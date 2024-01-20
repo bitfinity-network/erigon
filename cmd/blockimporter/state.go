@@ -19,6 +19,7 @@ import (
 	"github.com/ledgerwatch/erigon/eth/stagedsync"
 	"github.com/ledgerwatch/erigon/eth/stagedsync/stages"
 	"github.com/ledgerwatch/erigon/ethdb/olddb"
+	"github.com/ledgerwatch/erigon/turbo/trie"
 	"github.com/ledgerwatch/log/v3"
 )
 
@@ -144,8 +145,13 @@ func (state *State) ProcessBlock(block types.Block) error {
 		return fmt.Errorf("some of the transactions were rejected")
 	}
 
-	if execRs.StateRoot != block.Root() {
-		return fmt.Errorf("State root do not match: local %s != remote %s", execRs.StateRoot.String(), block.Root().String())
+	root, err := trie.CalcRoot("block", tx)
+	if err != nil {
+		return err
+	}
+
+	if root != block.Root() {
+		return fmt.Errorf("State root do not match: local %s != remote %s", root, block.Root().String())
 	}
 
 	if err := stateWriter.WriteHistory(); err != nil {
