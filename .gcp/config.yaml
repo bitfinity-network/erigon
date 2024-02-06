@@ -1,0 +1,47 @@
+# Configuration for /etc/google-cloud-ops-agent/config.yaml
+# 
+# <== Enter custom agent configurations in this file.
+# See https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration
+# for more details.
+
+logging:
+    receivers:
+        docker:
+            type: "files"
+            include_paths:
+                - "/var/lib/docker/containers/*/*-json.log"
+    processors:
+        docker-json:
+            type: "parse_json"
+            time_key: "time"
+            time_format: "%Y-%m-%dT%H:%M:%S.%LZ"
+
+        extract-log:
+            type: "parse_json"
+            field: "log"
+
+        parse:
+            type: parse_regex
+            field: "log"
+            regex: "^\s*\[(?<severity>[^\]]+)\]\s*\[.+?\]\s*(?<message>.*)"
+
+        fields:
+            type: modify_fields
+            fields:
+                labels.erigon:
+                    static_value: docker
+                severity:
+                    copy_from: jsonPayload.severity
+                    map_values:
+                        EROR: ERROR
+
+    service:
+        pipelines:
+            docker:
+                receivers: [docker]
+                processors: ['docker-json','extract-log','parse','fields']
+metrics:
+    service:
+        pipelines:
+            default_pipeline:
+                receivers: []
