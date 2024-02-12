@@ -22,6 +22,12 @@ type BalanceEntry struct {
 	Balance big.Int
 }
 
+type CertifiedBlockData struct {
+	Certificate []byte          `json:"certificate"`
+	Witness     []byte          `json:"witness"`
+	Block       json.RawMessage `json:"data"`
+}
+
 type BlockSource interface {
 	// Returns next block
 	PollBlocks(fromBlock uint64) ([]types.Block, error)
@@ -31,6 +37,9 @@ type BlockSource interface {
 
 	// Returns chain id
 	GetChainID() (int64, error)
+
+	// Returns last certified block data
+	GetLastCertifiedBlockData() (CertifiedBlockData, error)
 }
 
 type HttpBlockSource struct {
@@ -48,7 +57,7 @@ func NewHttpBlockSource(url string) HttpBlockSource {
 type jsonResponse struct {
 	Jsonrpc string
 	Id      int
-	Result  interface{}
+	Result  json.RawMessage
 	Error   interface{}
 }
 
@@ -94,26 +103,26 @@ func readBlocksFromRlp(byteStream io.Reader) ([]types.Block, error) {
 	return result, nil
 }
 
-func (blockSource *HttpBlockSource) makeRpcRequest(args map[string]interface{}) (interface{}, error) {
+func (blockSource *HttpBlockSource) makeRpcRequest(args map[string]interface{}) (json.RawMessage, error) {
 	requestBody, err := json.Marshal(args)
 	if err != nil {
-		return "", err
+		return json.RawMessage{}, err
 	}
 
 	resp, err := blockSource.client.Post(blockSource.url, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
-		return "", err
+		return json.RawMessage{}, err
 	}
 	defer resp.Body.Close()
 
 	decoder := json.NewDecoder(resp.Body)
 	var response jsonResponse
 	if err = decoder.Decode(&response); err != nil {
-		return "", err
+		return json.RawMessage{}, err
 	}
 
 	if response.Error != nil {
-		return "", fmt.Errorf("%v", response.Error)
+		return json.RawMessage{}, fmt.Errorf("%v", response.Error)
 	}
 
 	return response.Result, nil
@@ -154,11 +163,12 @@ func (blockSource *HttpBlockSource) PollBlocks(fromBlock uint64) ([]types.Block,
 	args := makeBlockRequest(fromBlock)
 
 	if response, err := blockSource.makeRpcRequest(args); err == nil {
-		if response, ok := response.(string); ok {
-			return readBlocksFromRlp(hex.NewDecoder(strings.NewReader(response)))
-		} else {
-			return nil, fmt.Errorf("invalid response type")
+		var responseStr string
+		if err = json.Unmarshal(response, &responseStr); err != nil {
+			return nil, fmt.Errorf("expected blocks string, %s", err)
 		}
+
+		return readBlocksFromRlp(hex.NewDecoder(strings.NewReader(responseStr)))
 	} else {
 		return nil, err
 	}
@@ -168,19 +178,19 @@ func (blockSource *HttpBlockSource) GetInitialBalances() ([]BalanceEntry, error)
 	args := makeInitialBalancesRequest()
 
 	if response, err := blockSource.makeRpcRequest(args); err == nil {
-
-		if response, ok := response.([]interface{}); ok {
-			parsedEntries := make([]BalanceEntry, len(response))
-			for i, entry := range response {
-				if parsedEntries[i], err = parseBalanceEntry(entry); err != nil {
-					return nil, err
-				}
-			}
-
-			return parsedEntries, nil
-		} else {
-			return nil, fmt.Errorf("invalid response type")
+		var responseEntries []interface{}
+		if err = json.Unmarshal(response, &responseEntries); err != nil {
+			return nil, fmt.Errorf("expected balances array, %s", err)
 		}
+
+		parsedEntries := make([]BalanceEntry, len(responseEntries))
+		for i, entry := range responseEntries {
+			if parsedEntries[i], err = parseBalanceEntry(entry); err != nil {
+				return nil, err
+			}
+		}
+
+		return parsedEntries, nil
 	} else {
 		return nil, err
 	}
@@ -193,17 +203,32 @@ func (blockSource *HttpBlockSource) GetChainID() (int64, error) {
 		return 0, err
 	}
 
-	response, ok := chainIDResponse.(string)
-	if !ok {
-		return 0, fmt.Errorf("invalid response structure")
+	var responseStr string
+	if err = json.Unmarshal(chainIDResponse, &responseStr); err != nil {
+		return 0, fmt.Errorf("expected string, %s", err)
 	}
 
 	var chainID big.Int
-	if _, ok = chainID.SetString(strings.TrimPrefix(strings.ToLower(response), "0x"), 16); !ok {
-		return 0, fmt.Errorf("failed to parse chain id `%s`", response)
+	if _, ok := chainID.SetString(strings.TrimPrefix(strings.ToLower(responseStr), "0x"), 16); !ok {
+		return 0, fmt.Errorf("failed to parse chain id `%s`", responseStr)
 	}
 
 	return chainID.Int64(), nil
+}
+
+func (blockSource *HttpBlockSource) GetLastCertifiedBlockData() (CertifiedBlockData, error) {
+	requestData := makeJsonRpcRequest("ic_getLastCertifiedBlock", []string{})
+	response, err := blockSource.makeRpcRequest(requestData)
+	if err != nil {
+		return CertifiedBlockData{}, err
+	}
+
+	var result CertifiedBlockData
+	if err = json.Unmarshal(response, &result); err != nil {
+		return CertifiedBlockData{}, err
+	}
+
+	return result, nil
 }
 
 type intervalBlockSourceDecorator struct {
@@ -250,6 +275,10 @@ func (decorator *intervalBlockSourceDecorator) GetInitialBalances() ([]BalanceEn
 
 func (decorator *intervalBlockSourceDecorator) GetChainID() (int64, error) {
 	return decorator.decoree.GetChainID()
+}
+
+func (decorator *intervalBlockSourceDecorator) GetLastCertifiedBlockData() (CertifiedBlockData, error) {
+	return decorator.GetLastCertifiedBlockData()
 }
 
 type retryBlockSourceDecorator struct {
@@ -342,6 +371,29 @@ func (decorator *retryBlockSourceDecorator) GetChainID() (int64, error) {
 	return 0, err
 }
 
+func (decorator *retryBlockSourceDecorator) GetLastCertifiedBlockData() (CertifiedBlockData, error) {
+	var err error
+	for i := 0; i < int(decorator.retryCount); i += 1 {
+		select {
+		case <-decorator.terminated:
+			{
+				return CertifiedBlockData{}, nil
+			}
+		default:
+			{
+				lastCertifiedBlock, err := decorator.decoree.GetLastCertifiedBlockData()
+				if err == nil {
+					return lastCertifiedBlock, nil
+				}
+
+				time.Sleep(decorator.retryInterval)
+			}
+		}
+	}
+
+	return CertifiedBlockData{}, err
+}
+
 type secondaryBlocksSourceDecorator struct {
 	primarySource         BlockSource
 	secondaryBlocksSource BlockSource
@@ -368,4 +420,12 @@ func (decorator *secondaryBlocksSourceDecorator) GetInitialBalances() ([]Balance
 
 func (decorator *secondaryBlocksSourceDecorator) GetChainID() (int64, error) {
 	return decorator.primarySource.GetChainID()
+}
+
+func (decorator *secondaryBlocksSourceDecorator) GetLastCertifiedBlockData() (CertifiedBlockData, error) {
+	if blocks, err := decorator.primarySource.GetLastCertifiedBlockData(); err == nil {
+		return blocks, err
+	}
+
+	return decorator.secondaryBlocksSource.GetLastCertifiedBlockData()
 }

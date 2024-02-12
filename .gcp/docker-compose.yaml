@@ -14,7 +14,7 @@ services:
   blockimporter:
     <<: *default-erigon-service
     entrypoint: /bin/sh
-    command: ["-c", "blockimporter --db=/chain-db --evm=https://orca-app-5yyst.ondigitalocean.app"]
+    command: ["-c", "blockimporter --db=/chain-db --evm=https://orca-app-5yyst.ondigitalocean.app --evm-principal=4fe7g-7iaaa-aaaak-aegcq-cai"]
     restart: unless-stopped
 
   # Reads data from db-volume
