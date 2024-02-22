@@ -1,0 +1,17 @@
+[package]
+name = "ic-certificate-verification-tool"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+candid = "0.10"
+did = { git = "https://github.com/bitfinity-network/bitfinity-evm-sdk", package = "did", branch = "add_certification" }
+hex = "0.4"
+ic-cbor = "2.3"
+ic-certificate-verification = "2.3"
+ic-certification = "2.3"
+serde = "1.0"
+serde_json = "1.0"

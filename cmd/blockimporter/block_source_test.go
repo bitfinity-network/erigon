@@ -48,6 +48,10 @@ func (blockSource *MockBlockSource) GetChainID() (int64, error) {
 	return testChainID, nil
 }
 
+func (blockSource *MockBlockSource) GetLastCertifiedBlockData() (CertifiedBlockData, error) {
+	return CertifiedBlockData{}, nil
+}
+
 func TestRetry(t *testing.T) {
 	blockSource := MockBlockSource{
 		results: []BlocksOrError{

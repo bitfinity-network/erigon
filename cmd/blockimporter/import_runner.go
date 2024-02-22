@@ -10,13 +10,14 @@ import (
 )
 
 type Settings struct {
-	DBPath          string
-	Logger          log.Logger
-	Terminated      chan struct{}
-	RetryCount      uint64
-	RetryInterval   time.Duration
-	PollInterval    time.Duration
-	SaveHistoryData bool
+	DBPath               string
+	Logger               log.Logger
+	Terminated           chan struct{}
+	RetryCount           uint64
+	RetryInterval        time.Duration
+	PollInterval         time.Duration
+	SaveHistoryData      bool
+	blockCheckerSettings BlockCheckerSettings
 }
 
 func RunImport(settings *Settings, blockSource BlockSource, secondaryBlocksSource BlockSource) error {
@@ -42,6 +43,7 @@ func RunImport(settings *Settings, blockSource BlockSource, secondaryBlocksSourc
 	}
 
 	blockSource = makeBlockSource(settings, blockSource, secondaryBlocksSource)
+	blockChecker := NewBlockChecker(settings.blockCheckerSettings, blockSource)
 
 	blocksChan := make(chan []types.Block, 10)
 
@@ -97,6 +99,14 @@ func RunImport(settings *Settings, blockSource BlockSource, secondaryBlocksSourc
 							}
 						default:
 							{
+								for _, block := range blocks {
+									if err := blockChecker.CheckBlock(block); err != nil {
+										resultErr = err
+										close(settings.Terminated)
+										return
+									}
+								}
+
 								if err := state.ProcessBlocks(blocks, settings.SaveHistoryData); err != nil {
 									resultErr = fmt.Errorf("failed to process block: %w", err)
 									close(settings.Terminated)

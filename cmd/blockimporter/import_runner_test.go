@@ -56,6 +56,10 @@ func (blockSource FileBasedBlockSource) GetChainID() (int64, error) {
 	return testChainID, nil
 }
 
+func (blockSource FileBasedBlockSource) GetLastCertifiedBlockData() (CertifiedBlockData, error) {
+	return CertifiedBlockData{}, nil
+}
+
 // Returns the max ETH balance to init a owner account
 func maxBalance() *big.Int {
 	var bytes [32]uint8

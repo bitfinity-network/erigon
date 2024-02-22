@@ -16,6 +16,13 @@ RUN --mount=type=cache,target=/root/.cache \
     make all
 
 
+FROM rust:1.75 as rust_builder
+
+WORKDIR /app
+COPY ./cmd/ic-certificate-verification-tool .
+
+RUN cargo install --path .
+
 FROM docker.io/library/golang:1.20-alpine3.17 AS tools-builder
 RUN apk --no-cache add build-base linux-headers git bash ca-certificates libstdc++
 WORKDIR /app
@@ -81,6 +88,9 @@ COPY --from=builder /app/build/bin/state /usr/local/bin/state
 COPY --from=builder /app/build/bin/txpool /usr/local/bin/txpool
 COPY --from=builder /app/build/bin/verkle /usr/local/bin/verkle
 COPY --from=builder /app/build/bin/blockimporter /usr/local/bin/blockimporter
+
+## copy ic-certificate-verification-tool
+COPY --from=rust_builder /app/target/release/ic-certificate-verification-tool /usr/local/bin/ic-certificate-verification-tool
 
 
 EXPOSE 8545 \
