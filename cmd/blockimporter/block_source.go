@@ -278,7 +278,7 @@ func (decorator *intervalBlockSourceDecorator) GetChainID() (int64, error) {
 }
 
 func (decorator *intervalBlockSourceDecorator) GetLastCertifiedBlockData() (CertifiedBlockData, error) {
-	return decorator.GetLastCertifiedBlockData()
+	return decorator.decoree.GetLastCertifiedBlockData()
 }
 
 type retryBlockSourceDecorator struct {
